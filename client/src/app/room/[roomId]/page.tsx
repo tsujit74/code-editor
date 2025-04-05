@@ -15,7 +15,7 @@ import ChatIcon from "@mui/icons-material/Chat";
 import SettingsIcon from "@mui/icons-material/Settings";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import NotificationsIcon from '@mui/icons-material/Notifications';
+import NotificationsIcon from "@mui/icons-material/Notifications";
 import FileExplorer from "@/app/components/fileExplorer/FileExplorer";
 import CloseIcon from "@mui/icons-material/Close";
 import { IFileExplorerNode } from "@/interfaces/IFileExplorerNode";
@@ -38,8 +38,14 @@ import { ThemeContext } from "@/context/ThemeContext";
 import { FontSizeContext } from "@/context/FontSizeContext";
 import { useSession } from "next-auth/react";
 import { ActiveFileContext } from "@/context/ActiveFileContext";
-import { getNotifications, addNotification, createNotificationMessage } from '@/services/notificationApi';
+import {
+  getNotifications,
+  addNotification,
+  createNotificationMessage,
+} from "@/services/notificationApi";
 import { getFileLanguage } from "@/app/helpers/getFileLanguage";
+import CodeIcon from "@mui/icons-material/Code";
+import CodeGenerator from "@/app/components/CodeGenerator";
 
 const filesContentMap = new Map<string, IFile>();
 
@@ -74,7 +80,8 @@ const Page = () => {
   const { messages, setMessages } = useContext(ChatContext);
   const { theme, setTheme } = useContext(ThemeContext);
   const { fontSize, setFontSize } = useContext(FontSizeContext);
-  const { activeFileGlobal, setActiveFileGlobal } = useContext(ActiveFileContext);
+  const { activeFileGlobal, setActiveFileGlobal } =
+    useContext(ActiveFileContext);
 
   const { roomId } = params;
 
@@ -116,25 +123,31 @@ const Page = () => {
   } = useAISuggestions({
     enabled: activeTab === 4,
   });
-  
 
   const handleAddNotification = async (
     type: NotificationType,
-    details: { username: string; fileName?: string; folderName?: string; path?: string }
+    details: {
+      username: string;
+      fileName?: string;
+      folderName?: string;
+      path?: string;
+    }
   ) => {
     try {
       // console.log("adding notification")
       const message = createNotificationMessage(type, details);
       const metadata = {
         path: details.path,
-        language: details.fileName ? getFileLanguage(details.fileName) : undefined,
+        language: details.fileName
+          ? getFileLanguage(details.fileName)
+          : undefined,
       };
 
       const newNotification = await addNotification(roomId as string, {
         type,
         message,
         username: details.username,
-        metadata
+        metadata,
       });
 
       const typedNotification: Notification = {
@@ -142,17 +155,17 @@ const Page = () => {
         message: newNotification.message,
         username: newNotification.username,
         timestamp: new Date(newNotification.timestamp),
-        metadata: newNotification.metadata
+        metadata: newNotification.metadata,
       };
 
-      setNotifications(prev => [typedNotification, ...prev]);
-      
+      setNotifications((prev) => [typedNotification, ...prev]);
+
       socketRef.current?.emit(ACTIONS.NOTIFICATION_ADDED, {
         roomId,
-        notification: typedNotification
+        notification: typedNotification,
       });
     } catch (error) {
-      console.error('Error adding notification:', error);
+      console.error("Error adding notification:", error);
     }
   };
 
@@ -179,7 +192,7 @@ const Page = () => {
           e.preventDefault();
           setActiveTab(1); // Users tab
           break;
-        case 'l':
+        case "l":
           e.preventDefault();
           setActiveTab(5); // Notifications tab
           break;
@@ -314,7 +327,14 @@ const Page = () => {
 
       setIsFileExplorerUpdated(false);
     }
-  }, [isFileExplorerUpdated, fileExplorerData, files, activeFile,activeFileGlobal, roomId]);
+  }, [
+    isFileExplorerUpdated,
+    fileExplorerData,
+    files,
+    activeFile,
+    activeFileGlobal,
+    roomId,
+  ]);
 
   // function handleEditorDidMount(editor: any, monaco: any) {
   //   editorRef.current = editor;
@@ -349,10 +369,10 @@ const Page = () => {
     setActiveFile(updatedActiveFile);
     setActiveFileGlobal(updatedActiveFile);
     setFiles(updatedOpenFiles);
-    handleAddNotification('FILE_UPDATE', {
-      username: username || 'anonymous',
+    handleAddNotification("FILE_UPDATE", {
+      username: username || "anonymous",
       fileName: activeFile.name,
-      path: activeFile.path
+      path: activeFile.path,
     });
     const dataPayload: IDataPayload = {
       fileExplorerData,
@@ -442,11 +462,11 @@ const Page = () => {
       language: activeFile.language,
       extension: activeFile.name.split(".")[1],
     };
-    handleAddNotification('CODE_EXECUTE', {
-      username: username || 'anonymous',
+    handleAddNotification("CODE_EXECUTE", {
+      username: username || "anonymous",
       fileName: activeFile.name,
-      path: activeFile.path
-    })
+      path: activeFile.path,
+    });
     if (!["cpp", "py", "js"].includes(data.extension)) {
       toast.error(
         `Unsupported programming language (${data.language}). Supported languages are C++, Python, and JavaScript.`
@@ -475,7 +495,7 @@ const Page = () => {
       // }
       if (!socketRef || !socketRef.current) {
         toast.error("Failed to connect to websocket");
-        setLoading(false)
+        setLoading(false);
         return;
       }
       socketRef.current.emit(ACTIONS.EXECUTE_CODE, {
@@ -513,10 +533,10 @@ const Page = () => {
         username: usernameFromUrl,
       });
 
-      socketRef.current.on(ACTIONS.JOINED, ({ clients, username } ) => {
+      socketRef.current.on(ACTIONS.JOINED, ({ clients, username }) => {
         if (username !== usernameFromUrl) {
           toast.success(`${username} joined the room.`);
-          handleAddNotification('USER_JOIN', { username });
+          handleAddNotification("USER_JOIN", { username });
         }
         setClients(clients);
       });
@@ -530,16 +550,19 @@ const Page = () => {
         ACTIONS.DISCONNECTED,
         ({ username, socketId }: { username: string; socketId: string }) => {
           toast.success(`${username} left the room.`);
-          handleAddNotification('USER_LEAVE', { username });
+          handleAddNotification("USER_LEAVE", { username });
           setClients((prev: any) => {
             return prev.filter((client: any) => client.socketId !== socketId);
           });
         }
       );
 
-      socketRef.current.on(ACTIONS.NOTIFICATION_ADDED, ({ notification} : { notification: Notification }) => {
-        setNotifications(prev => [notification, ...prev]);
-      });
+      socketRef.current.on(
+        ACTIONS.NOTIFICATION_ADDED,
+        ({ notification }: { notification: Notification }) => {
+          setNotifications((prev) => [notification, ...prev]);
+        }
+      );
 
       // NEW: Listen for remote cursor change events
       socketRef.current.on(
@@ -558,11 +581,19 @@ const Page = () => {
           // Ignore our own cursor events
           console.log(
             "data.filePath !== activeFileGlobal.path",
-            data.filePath, "!==", activeFileGlobal);
-          
+            data.filePath,
+            "!==",
+            activeFileGlobal
+          );
+
           // if(data.filePath !== activeFileGlobal?.path) return;
-          console.log(username, "!==", data.username,data.username === username );
-          
+          console.log(
+            username,
+            "!==",
+            data.username,
+            data.username === username
+          );
+
           if (data.username === username) return;
           updateRemoteCursor(data.username, data.position, data.username);
         }
@@ -588,13 +619,12 @@ const Page = () => {
           }
         }
       );
-      
-      socketRef.current.on(ACTIONS.CODE_RESULT,(result)=>{
-        setLoading(false)
-        console.log(result)
-        setCodeOutput(result.output)
-      })
 
+      socketRef.current.on(ACTIONS.CODE_RESULT, (result) => {
+        setLoading(false);
+        console.log(result);
+        setCodeOutput(result.output);
+      });
     };
 
     usernameFromUrl ? init() : handleLeaveRoom();
@@ -686,7 +716,6 @@ const Page = () => {
       };
       console.log("Emitting payload:", payload);
       socketRef.current?.emit(ACTIONS.CURSOR_CHANGE, payload);
-      
     });
   }
 
@@ -756,6 +785,15 @@ const Page = () => {
             "&:hover": { color: "rgb(22 163 74)" },
           }}
         />
+        <CodeIcon
+          onClick={() => handleTabChange(6)} // Using tab 6 for code generation
+          sx={{
+            cursor: "pointer",
+            fontSize: "2rem",
+            color: activeTab === 6 ? "rgb(22 163 74)" : "#8c7f91",
+            "&:hover": { color: "rgb(22 163 74)" },
+          }}
+        />
         <NotificationsIcon
           onClick={() => handleTabChange(5)}
           sx={{
@@ -803,9 +841,9 @@ const Page = () => {
               filesContentMap={filesContentMap}
               notifications={notifications}
               setNotifications={setNotifications}
-            socket={socketRef}
-            username={username}
-          />
+              socket={socketRef}
+              username={username}
+            />
           )}
           {activeTab === 1 && (
             <Peoples clients={clients} roomId={roomId as string} />
@@ -826,15 +864,46 @@ const Page = () => {
             />
           )}
           {activeTab === 5 && (
-          <ActivityLog
-            notifications={notifications}
-            onRefresh={async () => {
-              const refreshedNotifications = await getNotifications(roomId as string);
-              setNotifications(refreshedNotifications);
-            }}
-          />
-        )}
-      </div>
+            <ActivityLog
+              notifications={notifications}
+              onRefresh={async () => {
+                const refreshedNotifications = await getNotifications(
+                  roomId as string
+                );
+                setNotifications(refreshedNotifications);
+              }}
+            />
+          )}
+          {activeTab === 6 && (
+  <CodeGenerator 
+    activeFile={activeFile}
+    onGenerate={async (prompt) => {
+      try {
+        const response = await fetch('/api/generate-code', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt,
+            language: activeFile.language,
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to generate code');
+        }
+        
+        const data = await response.json();
+        return data.code;
+      } catch (error) {
+        console.error('Error generating code:', error);
+        throw error;
+      }
+    }}
+  />
+)}
+        </div>
       )}
       <div
         className={`coegle_editor h-screen ${
