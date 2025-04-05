@@ -22,8 +22,10 @@ const extensionToLanguageMap: { [key: string]: string } = {
   sh: "shell script",
 };
 
-const getLanguageByFileExtension = (extension: string) => {
-  return extensionToLanguageMap[extension];
+const getLanguageByFileExtension = (extension: string | undefined): string => {
+  if (!extension) return "plaintext";
+  return extensionToLanguageMap[extension.toLowerCase()] || "plaintext";
 };
+
 
 export { getLanguageByFileExtension };

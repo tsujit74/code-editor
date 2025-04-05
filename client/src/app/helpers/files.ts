@@ -1,17 +1,21 @@
-const someJSCodeExample = `
-
-`;
-
-const someCSSCodeExample = `
-
-`;
-
-const someHTMLCodeExample = `
-`;
-
+const someJSCodeExample = ``;
+const someCSSCodeExample = ``;
+const someHTMLCodeExample = ``;
 const somePythonCodeExample = ``;
+const someJavaCodeExample = `public class Simple {
+  public static void main(String[] args) {
+    System.out.println("Hello, Java!");
+  }
+}`;
 
-const files: any = {
+// Define the type
+type CodeFile = {
+  name: string;
+  language: string;
+  value: string;
+};
+
+const files: Record<string, CodeFile> = {
   "script.js": {
     name: "script.js",
     language: "javascript",
@@ -46,6 +50,11 @@ const files: any = {
     name: "output.py",
     language: "output",
     value: somePythonCodeExample,
+  },
+  "simple.java": {
+    name: "simple.java",
+    language: "java",
+    value: someJavaCodeExample,
   },
 };
 

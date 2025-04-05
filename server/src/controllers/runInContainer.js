@@ -3,11 +3,11 @@ import { writeFile, unlink } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import os from "os"; // ✅ Import OS for cross-platform temp directory
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Set execution timeout (5 seconds)
 const TIMEOUT = 5000;
 
 async function executeCode(language, code) {
@@ -23,31 +23,49 @@ async function executeCode(language, code) {
         return handleProcess(process);
       }
 
-      case "cpp": {
-        const filename = `temp_${Date.now()}`;
-        const filepath = path.join("/tmp", filename);
+      case "java": {
+        const filename = `Main_${Date.now()}`;
+        const folder = path.join(os.tmpdir(), filename); // ✅ Use OS temp dir
+        const javaFile = `${folder}.java`;
 
-        await writeFile(`${filepath}.cpp`, code);
+        const javaCode = code.replace(/public\s+class\s+\w+/, `public class ${filename}`);
 
-        // First compile
-        const compileProcess = spawn("g++", [
-          `${filepath}.cpp`,
-          "-o",
-          filepath,
-        ]);
+        await writeFile(javaFile, javaCode);
+
+        const compileProcess = spawn("javac", [javaFile]);
         const compileResult = await handleProcess(compileProcess);
 
         if (!compileResult.success) {
-          // Cleanup and return compilation error
+          await cleanup(javaFile);
+          return compileResult;
+        }
+
+        const runProcess = spawn("java", ["-cp", os.tmpdir(), filename]); // ✅ Fix classpath
+        const result = await handleProcess(runProcess);
+
+        await cleanup(javaFile);
+        await unlink(path.join(os.tmpdir(), `${filename}.class`)).catch(() => {}); // ✅ Delete .class file
+
+        return result;
+      }
+
+      case "cpp": {
+        const filename = `temp_${Date.now()}`;
+        const filepath = path.join(os.tmpdir(), filename); // ✅ OS temp dir
+
+        await writeFile(`${filepath}.cpp`, code);
+
+        const compileProcess = spawn("g++", [`${filepath}.cpp`, "-o", filepath]);
+        const compileResult = await handleProcess(compileProcess);
+
+        if (!compileResult.success) {
           await cleanup(filepath);
           return compileResult;
         }
 
-        // Then run
         const runProcess = spawn(filepath);
         const result = await handleProcess(runProcess);
 
-        // Cleanup
         await cleanup(filepath);
         return result;
       }
@@ -69,7 +87,6 @@ function handleProcess(process) {
     let error = "";
     let killed = false;
 
-    // Set timeout
     const timeoutId = setTimeout(() => {
       process.kill();
       killed = true;
@@ -101,8 +118,10 @@ function handleProcess(process) {
 
 async function cleanup(filepath) {
   try {
-    await unlink(`${filepath}.cpp`);
     await unlink(filepath);
+    await unlink(`${filepath}.cpp`).catch(() => {});
+    await unlink(`${filepath}.java`).catch(() => {});
+    await unlink(`${filepath}.class`).catch(() => {});
   } catch (e) {
     console.error("Cleanup error:", e);
   }

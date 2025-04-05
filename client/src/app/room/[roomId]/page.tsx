@@ -467,7 +467,7 @@ const Page = () => {
       fileName: activeFile.name,
       path: activeFile.path,
     });
-    if (!["cpp", "py", "js"].includes(data.extension)) {
+    if (!["cpp", "py", "js", "java"].includes(data.extension)) {
       toast.error(
         `Unsupported programming language (${data.language}). Supported languages are C++, Python, and JavaScript.`
       );
