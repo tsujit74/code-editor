@@ -23,7 +23,8 @@ app.use('/api/notifications',notificationRoutes)
 
 console.log("mongodb uri", process.env.MONGODB_URI);
 
-connectDB("mongodb://127.0.0.1:27017/codeeditor");
+// connectDB("mongodb://127.0.0.1:27017/codeeditor");
+connectDB();
 
 app.get("/", (req, res) => {
   res.send("Hello, TypeScript with Node.js!");
